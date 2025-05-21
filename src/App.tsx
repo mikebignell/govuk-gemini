@@ -5,7 +5,7 @@ import { Button, TextArea, Heading, Panel, SectionBreak, InsetText } from 'govuk
 import { GlobalStyle } from 'govuk-react';
 
 function App() {
-  const [prompt, setPrompt] = useState('');
+  const [prompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,7 +21,8 @@ function App() {
     
     try {
       const response = await generatePage({ prompt });
-      window.location.href = response.data.generatePage;
+      console.log(response);
+      //window.location.href = response.data.generatePage;
     } catch (err) {
       setError('Failed to generate page. Please try again.');
       console.error(err);
@@ -51,12 +52,8 @@ function App() {
         
         <form onSubmit={handleSubmit}>
           <TextArea
-            label="What government advice would you like?"
             hint="For example: 'how to apply for a passport' or 'rules for recycling in my area'"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            required
-            rows={5}
+            children="What would you like to generate the page for?"
           />
           
           <Button type="submit" loading={isLoading}>
