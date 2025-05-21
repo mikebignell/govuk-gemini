@@ -5,7 +5,7 @@ import { Button, TextArea, Heading, Panel, SectionBreak, InsetText } from 'govuk
 import { GlobalStyle } from 'govuk-react';
 
 function App() {
-  const [prompt] = useState('');
+  const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,8 +21,21 @@ function App() {
     
     try {
       const response = await generatePage({ prompt });
-      console.log(response);
-      //window.location.href = response.data.generatePage;
+      let url: string | undefined;
+
+      if (typeof response === 'string') {
+        url = response;
+      } else if (response && typeof response === 'object' && 'data' in response && response.data?.generatePage) {
+        url = response.data.generatePage;
+      } else if (response && typeof response === 'object' && 'generatePage' in response) {
+        url = (response as any).generatePage;
+      }
+
+      if (url) {
+        window.location.href = url;
+      } else {
+        setError('Unexpected response from server.');
+      }
     } catch (err) {
       setError('Failed to generate page. Please try again.');
       console.error(err);
@@ -53,8 +66,15 @@ function App() {
         <form onSubmit={handleSubmit}>
           <TextArea
             hint="For example: 'how to apply for a passport' or 'rules for recycling in my area'"
-            children="What would you like to generate the page for?"
-          />
+            input={{
+              value: prompt,
+              onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => setPrompt(e.target.value),
+              required: true,
+              rows: 5
+            }}
+          >
+            What government advice would you like?
+          </TextArea>
           
           <Button type="submit" loading={isLoading}>
             Generate Advice Page
