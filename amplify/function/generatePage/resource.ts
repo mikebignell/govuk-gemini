@@ -1,7 +1,7 @@
 import { defineFunction } from '@aws-amplify/backend';
 
-export const myFunction = defineFunction({
-  name: 'generateGovukPage',
+export const generatePage = defineFunction({
+  name: 'generatePage',
   environment: {
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY!
   },
