@@ -1,7 +1,7 @@
 // amplify/function/generateGovukPage/handler.ts
-import { secret } from '@aws-amplify/backend';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import type { Schema } from "../../data/resource"
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 const bucketName = process.env.AMPLIFY_STORAGE_BUCKET_NAME!;
@@ -12,7 +12,7 @@ interface Event {
   };
 }
 
-export const handler = async (event: Event) => {
+export const handler: Schema["generatePage"]["functionHandler"] = async (event) => {
   try {
     const prompt = event.arguments.prompt;
     

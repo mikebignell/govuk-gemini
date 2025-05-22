@@ -1,15 +1,11 @@
+import type { Schema } from "../../amplify/data/resource"
 import { generateClient } from 'aws-amplify/api';
 
-const client = generateClient();
-
 export const generatePage = async (input: { prompt: string }) => {
-  const result = await client.graphql({
-    query: `
-      mutation GeneratePage($prompt: String!) {
-        generatePage(prompt: $prompt)
-      }
-    `,
-    variables: input
+  const client = generateClient<Schema>();
+
+  const result = await client.queries.generatePage({
+    prompt: input.prompt
   });
   
   return result;
