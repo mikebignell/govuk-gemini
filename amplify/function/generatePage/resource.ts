@@ -1,10 +1,9 @@
-import { defineFunction } from '@aws-amplify/backend';
+import { defineFunction, secret } from '@aws-amplify/backend';
 
 export const generatePage = defineFunction({
   name: 'generatePage',
+  entry: './handler.ts',
   environment: {
-    GOOGLE_API_KEY: process.env.GOOGLE_API_KEY!
-  },
-  // Add external dependencies
-  externalDependencies: ['@google/generative-ai', '@aws-sdk/client-s3']
+    GOOGLE_API_KEY: secret(process.env.GOOGLE_API_KEY!)
+  }
 });

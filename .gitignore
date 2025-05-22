@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 amplify-backup
 .env
+.amplify
+amplify_outputs.json

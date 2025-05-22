@@ -1,6 +1,5 @@
 // amplify/function/generateGovukPage/handler.ts
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { URL } from 'url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
