@@ -1,4 +1,5 @@
 // amplify/function/generateGovukPage/handler.ts
+import { secret } from '@aws-amplify/backend';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -21,7 +22,7 @@ export const handler = async (event: Event) => {
     
     // Call Google Gemini API
     const result = await model.generateContent(
-        `Create a detailed response in the style of a UK government advice page about: ${prompt}. 
+        `Create a detailed response in the style of a UK government advice page about: ${prompt}.
           Use formal, clear language and structure it with appropriate headings. Follow these guidelines:
           1. Use clear, concise sentences
           2. Structure with H2 and H3 headings

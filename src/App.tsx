@@ -1,8 +1,12 @@
 // src/App.tsx
+import { Amplify } from 'aws-amplify';
 import { useState } from 'react';
 import { generatePage } from './graphql/mutations';
 import { Button, TextArea, Heading, Panel, SectionBreak, InsetText } from 'govuk-react';
 import { GlobalStyle } from 'govuk-react';
+import outputs from '../amplify_outputs.json';
+
+Amplify.configure(outputs);
 
 function App() {
   const [prompt, setPrompt] = useState('');
