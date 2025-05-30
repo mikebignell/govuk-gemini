@@ -1,11 +1,28 @@
 // src/App.tsx
 import { Amplify } from 'aws-amplify';
+import { parseAmplifyConfig } from "aws-amplify/utils";
 import outputs from '../amplify_outputs.json';
 
-Amplify.configure(outputs);
+const amplifyConfig = parseAmplifyConfig(outputs);
+Amplify.configure(
+  {
+    ...amplifyConfig,
+    API: {
+      ...amplifyConfig.API,
+      REST: outputs.custom.API,
+    },
+  },
+  {
+    API: {
+      REST: {
+        retryStrategy: {
+          strategy: 'no-retry', // Overrides default retry strategy
+        },
+      }
+    }
+  });
 
 import { useState } from 'react';
-import { generatePage } from './graphql/mutations';
 import { Button, TextArea, Heading, Panel, SectionBreak, InsetText } from 'govuk-react';
 import { GlobalStyle } from 'govuk-react';
 
@@ -14,8 +31,30 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Find the REST API endpoint from amplify_outputs.json
+  const API_URL = outputs.custom?.API?.generatePageApi?.endpoint + "items";
+
+  async function generatePage(input: { prompt: string }) {
+    if (!API_URL) throw new Error('API endpoint not found in amplify_outputs.json');
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: input.prompt })
+    });
+    if (!response.ok) throw new Error('API error');
+    // The lambda returns a string URL (possibly JSON-encoded)
+    let url = await response.text();
+    // If the response is JSON, parse it
+    try {
+      const parsed = JSON.parse(url);
+      if (typeof parsed === 'string') url = parsed;
+    } catch {}
+    return url;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!prompt.trim()) {
       setError('Please enter your question');
       return;
@@ -25,17 +64,7 @@ function App() {
     setError('');
     
     try {
-      const response = await generatePage({ prompt });
-      let url: string | undefined;
-
-      if (typeof response === 'string') {
-        url = response;
-      } else if (response && typeof response === 'object' && 'data' in response && response.data?.generatePage) {
-        url = response.data.generatePage;
-      } else if (response && typeof response === 'object' && 'generatePage' in response) {
-        url = (response as any).generatePage;
-      }
-
+      const url = await generatePage({ prompt });
       if (url) {
         window.location.href = url;
       } else {
@@ -71,6 +100,7 @@ function App() {
         <form onSubmit={handleSubmit}>
           <TextArea
             hint="For example: 'how to apply for a passport' or 'rules for recycling in my area'"
+            defaultValue="A simple page with text entry and a submit button for comments"
             input={{
               value: prompt,
               onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => setPrompt(e.target.value),

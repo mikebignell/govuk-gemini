@@ -1,41 +1,36 @@
 // amplify/function/generateGovukPage/handler.ts
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { Schema } from "../../data/resource"
+import { GoogleGenAI } from "@google/genai";
+import type { APIGatewayProxyHandler } from "aws-lambda";
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 const bucketName = process.env.AMPLIFY_STORAGE_BUCKET_NAME!;
 
-interface Event {
-  arguments: {
-    prompt: string;
-  };
-}
-
-export const handler: Schema["generatePage"]["functionHandler"] = async (event) => {
+export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const prompt = event.arguments.prompt;
-    
+    const prompt = event.body;
+
     // Initialize Google Gemini
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
-    
-    // Call Google Gemini API
-    const result = await model.generateContent(
-        `Create a detailed response in the style of a UK government advice page about: ${prompt}.
-          Use formal, clear language and structure it with appropriate headings. Follow these guidelines:
-          1. Use clear, concise sentences
-          2. Structure with H2 and H3 headings
-          3. Use bullet points for lists
-          4. Include relevant warnings or cautions if applicable
-          5. Maintain a professional, authoritative tone`
-    );
-    
-    const response = await result.response;
-    const text = response.text();
-    
-    // Generate GOV.UK styled HTML
-    const htmlContent = generateGovukHtml(text);
+    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
+
+    const promptContents = `Create a HTML page in the gov.uk design system with the following prompt: ${prompt}
+
+    The prompt is user generated so if it doesn't sem like valid input for this use case, please generate an extremely simple error page.
+    Respond with only the HTML page that I can save to a file, and no markdown or other formatting.
+    Include a header and a footer in the style of the gov.uk website, but don't include large SVG files in the page, it should be lightweight and link to as many assets as possible
+    Do not use javascript for anything other than the initial layout
+    Use this file as CSS: https://cdn.jsdelivr.net/npm/govuk-frontend@5.10.1/dist/govuk/govuk-frontend.min.css
+    and this file as the javascript: https://cdn.jsdelivr.net/npm/govuk-frontend@5.10.1/dist/govuk-frontend.min.js`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-05-20",
+      contents: promptContents,
+      config: {
+        thinkingConfig: {
+          includeThoughts: false
+        },
+      },
+    });
     
     // Save to S3
     const fileName = `generated-pages/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.html`;
@@ -43,50 +38,25 @@ export const handler: Schema["generatePage"]["functionHandler"] = async (event) 
     await s3Client.send(new PutObjectCommand({
       Bucket: bucketName,
       Key: fileName,
-      Body: htmlContent,
-      ContentType: 'text/html'
+      Body: response.text,
+      ContentType: 'text/html',
     }));
     
     // Return the URL to redirect to
     const fileUrl = new URL(`https://${bucketName}.s3.amazonaws.com/${fileName}`);
-    return fileUrl.toString();
+
+    return {
+        statusCode: 200,
+        // Modify the CORS settings below to match your specific requirements
+        headers: {
+          "Access-Control-Allow-Origin": "*", // Restrict this to domains you trust
+          "Access-Control-Allow-Headers": "*", // Specify only the headers you need to allow
+        },
+        body: JSON.stringify(fileUrl.toString()),
+      };
+
   } catch (error) {
     console.error('Error:', error);
     throw error;
   }
 };
-
-function generateGovukHtml(content: string): string {
-  // Convert markdown-style formatting to HTML
-  const formattedContent = content
-    .replace(/##\s(.+?)\n/g, '<h2 class="govuk-heading-l">$1</h2>')
-    .replace(/###\s(.+?)\n/g, '<h3 class="govuk-heading-m">$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\n\s*-\s(.+?)(?=\n)/g, '<li>$1</li>')
-    .replace(/(<li>.+?<\/li>)+/g, '<ul class="govuk-list govuk-list--bullet">$&</ul>')
-    .replace(/\n/g, '<br>');
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Government Advice</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/govuk-frontend@4.7.0/govuk/all.css">
-</head>
-<body>
-  <div class="govuk-width-container">
-    <main class="govuk-main-wrapper govuk-main-wrapper--auto-spacing" id="main-content" role="main">
-      <div class="govuk-grid-row">
-        <div class="govuk-grid-column-two-thirds">
-          ${formattedContent}
-        </div>
-      </div>
-    </main>
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/govuk-frontend@4.7.0/govuk/all.js"></script>
-  <script>window.GOVUKFrontend.initAll()</script>
-</body>
-</html>`;
-}
