@@ -1,14 +1,13 @@
-// amplify/function/generateGovukPage/handler.ts
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { GoogleGenAI } from "@google/genai";
-import type { APIGatewayProxyHandler } from "aws-lambda";
+import type { Schema } from "../../data/resource"
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 const bucketName = process.env.AMPLIFY_STORAGE_BUCKET_NAME!;
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: Schema["generatePage"]["functionHandler"] = async (event) => {
   try {
-    const prompt = event.body;
+    const { prompt } = event.arguments;
 
     // Initialize Google Gemini
     const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
@@ -43,17 +42,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }));
     
     // Return the URL to redirect to
-    const fileUrl = new URL(`https://${bucketName}.s3.amazonaws.com/${fileName}`);
-
-    return {
-        statusCode: 200,
-        // Modify the CORS settings below to match your specific requirements
-        headers: {
-          "Access-Control-Allow-Origin": "*", // Restrict this to domains you trust
-          "Access-Control-Allow-Headers": "*", // Specify only the headers you need to allow
-        },
-        body: JSON.stringify(fileUrl.toString()),
-      };
+    return `https://${bucketName}.s3.amazonaws.com/${fileName}`;
 
   } catch (error) {
     console.error('Error:', error);

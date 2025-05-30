@@ -4,6 +4,7 @@ import { parseAmplifyConfig } from "aws-amplify/utils";
 import outputs from '../amplify_outputs.json';
 
 const amplifyConfig = parseAmplifyConfig(outputs);
+
 Amplify.configure(
   {
     ...amplifyConfig,
@@ -22,6 +23,7 @@ Amplify.configure(
     }
   });
 
+import { generatePage } from './graphql/mutations'; // Import mutations to ensure they are registered
 import { useState } from 'react';
 import { Button, TextArea, Heading, Panel, SectionBreak, InsetText } from 'govuk-react';
 import { GlobalStyle } from 'govuk-react';
@@ -30,27 +32,6 @@ function App() {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Find the REST API endpoint from amplify_outputs.json
-  const API_URL = outputs.custom?.API?.generatePageApi?.endpoint + "items";
-
-  async function generatePage(input: { prompt: string }) {
-    if (!API_URL) throw new Error('API endpoint not found in amplify_outputs.json');
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: input.prompt })
-    });
-    if (!response.ok) throw new Error('API error');
-    // The lambda returns a string URL (possibly JSON-encoded)
-    let url = await response.text();
-    // If the response is JSON, parse it
-    try {
-      const parsed = JSON.parse(url);
-      if (typeof parsed === 'string') url = parsed;
-    } catch {}
-    return url;
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +45,9 @@ function App() {
     setError('');
     
     try {
-      const url = await generatePage({ prompt });
+      const response = await generatePage({ prompt });
+      const url = response?.data;
+
       if (url) {
         window.location.href = url;
       } else {
