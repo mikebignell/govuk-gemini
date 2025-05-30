@@ -12,6 +12,31 @@ import { useState } from 'react';
 import { Button, TextArea, Heading, Panel, SectionBreak, InsetText } from 'govuk-react';
 import { GlobalStyle } from 'govuk-react';
 
+// Simple spinner component
+const Spinner = () => (
+  <span
+    style={{
+      display: 'inline-block',
+      width: 20,
+      height: 20,
+      marginLeft: 10,
+      border: '3px solid #b1b4b6',
+      borderTop: '3px solid #1d70b8',
+      borderRadius: '50%',
+      animation: 'spin 1s linear infinite',
+      verticalAlign: 'middle',
+    }}
+    aria-label="Loading"
+  />
+);
+
+// Add spinner keyframes to global style
+const spinnerStyle = `
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}`;
+
 function App() {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +73,7 @@ function App() {
   return (
     <>
       <GlobalStyle />
+      <style>{spinnerStyle}</style>
       <div style={{ maxWidth: '960px', margin: '0 auto', padding: '0 30px' }}>
         <Heading size="XLARGE">Government Advice Generator</Heading>
         
@@ -77,10 +103,12 @@ function App() {
           >
             What government advice would you like?
           </TextArea>
-          
-          <Button type="submit" loading={isLoading}>
-            Generate Advice Page
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Button type="submit" loading={isLoading}>
+              Generate Advice Page
+            </Button>
+            {isLoading && <Spinner />}
+          </div>
         </form>
       </div>
     </>
