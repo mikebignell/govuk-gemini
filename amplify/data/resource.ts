@@ -7,7 +7,7 @@ const schema = a.schema({
     .mutation()
     .arguments({ prompt: a.string() })
     .returns(a.string())
-    .authorization(allow => [allow.guest()])
+    .authorization(allow => [allow.publicApiKey()]) // Use publicApiKey for API key auth
     .handler(a.handler.function(generatePage))
 });
 

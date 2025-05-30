@@ -5,23 +5,7 @@ import outputs from '../amplify_outputs.json';
 
 const amplifyConfig = parseAmplifyConfig(outputs);
 
-Amplify.configure(
-  {
-    ...amplifyConfig,
-    API: {
-      ...amplifyConfig.API,
-      REST: outputs.custom.API,
-    },
-  },
-  {
-    API: {
-      REST: {
-        retryStrategy: {
-          strategy: 'no-retry', // Overrides default retry strategy
-        },
-      }
-    }
-  });
+Amplify.configure(amplifyConfig);
 
 import { generatePage } from './graphql/mutations'; // Import mutations to ensure they are registered
 import { useState } from 'react';
